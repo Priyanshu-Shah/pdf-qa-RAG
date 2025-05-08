@@ -1,0 +1,14 @@
+flask
+flask-cors
+gunicorn
+langchain
+langchain-community
+langchain-google-genai
+google-generativeai
+transformers
+sentence-transformers
+pypdf
+chromadb
+python-dotenv
+werkzeug
+torch
