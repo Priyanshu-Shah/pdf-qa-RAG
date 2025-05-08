@@ -157,9 +157,30 @@ export const deleteFile = async (fileId) => {
       return simulateDeleteFile(fileId);
     }
     
+    // Add a check for valid fileId
+    if (!fileId) {
+      throw new Error("Invalid file ID provided");
+    }
+    
+    // Log the request for debugging
+    console.log(`Attempting to delete file with ID: ${fileId}`);
+    
     const response = await fetch(`${API_BASE_URL}/files/${fileId}`, {
       method: 'DELETE',
     });
+    
+    // Improved error handling
+    if (response.status === 404) {
+      console.warn(`File with ID ${fileId} not found on server, removing from UI only`);
+      // Return success even if the file wasn't on the server
+      // This allows the UI to clean up even if backend state is inconsistent
+      return {
+        success: true,
+        fileId: fileId,
+        message: 'File removed from UI (not found on server)',
+        notFoundOnServer: true
+      };
+    }
     
     if (!response.ok) {
       throw new Error(`Failed to delete file with status: ${response.status}`);

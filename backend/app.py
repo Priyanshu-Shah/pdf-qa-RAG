@@ -140,10 +140,15 @@ def delete_file(file_id):
     Delete a file from storage and vector database
     """
     try:
+        # Log the request
+        logger.info(f"Delete request received for file ID: {file_id}")
+        
         # Check if file exists
         file_info = vector_store.get_file_metadata(file_id)
         if not file_info:
-            return jsonify({"error": "File not found"}), 404
+            logger.warning(f"File not found: {file_id}")
+            # Return a 404 with a descriptive message
+            return jsonify({"error": "File not found", "fileId": file_id}), 404
         
         # Remove from vector store (which also removes the PDF file)
         success = vector_store.remove_file(file_id)
@@ -160,7 +165,7 @@ def delete_file(file_id):
     except Exception as e:
         logger.error(f"Error deleting file: {e}")
         return jsonify({"error": str(e)}), 500
-
+    
 @app.route('/')
 def index():
     return jsonify({"message": "PDF Q&A API is running", "status": "ok"})

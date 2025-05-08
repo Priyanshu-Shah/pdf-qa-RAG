@@ -11,4 +11,5 @@ pypdf
 chromadb
 python-dotenv
 werkzeug
+schedule
 torch
