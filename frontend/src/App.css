@@ -1,0 +1,36 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f9fafb;
+  color: #1f2937;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .main-content {
+    flex-direction: column;
+  }
+  
+  .document-sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 30%;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .app-container {
+    background-color: #111827;
+    color: #f9fafb;
+  }
+}

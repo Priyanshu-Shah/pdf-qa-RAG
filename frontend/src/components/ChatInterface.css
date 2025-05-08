@@ -1,0 +1,162 @@
+.chat-interface {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.messages-container {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.empty-chat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: #6b7280;
+  padding: 2rem;
+}
+
+.empty-chat-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.empty-chat h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #4b5563;
+}
+
+.empty-chat p {
+  max-width: 400px;
+}
+
+.ai-thinking {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  width: fit-content;
+  margin-left: 40px;
+}
+
+.message-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background-color: #ffffff;
+  border-top: 1px solid #e5e7eb;
+}
+
+.textarea-container {
+  flex: 1;
+  position: relative;
+}
+
+.message-form textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  resize: none;
+  min-height: 44px;
+  max-height: 120px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.message-form textarea:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.message-form textarea:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.send-button {
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.send-button:hover {
+  background-color: #4338ca;
+}
+
+.send-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+@media (prefers-color-scheme: dark) {
+  .chat-container {
+    background-color: #111827;
+  }
+  
+  .ai-thinking {
+    background-color: #1f2937;
+  }
+  
+  .message-form {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+  
+  .message-form textarea {
+    background-color: #111827;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .message-form textarea:focus {
+    border-color: #4f46e5;
+  }
+  
+  .message-form textarea:disabled {
+    background-color: #1f2937;
+    color: #6b7280;
+  }
+  
+  .empty-chat h2 {
+    color: #d1d5db;
+  }
+  
+  .empty-chat {
+    color: #9ca3af;
+  }
+}

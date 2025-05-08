@@ -1,0 +1,245 @@
+.document-sidebar {
+    width: 280px;
+    height: 100%;
+    background-color: #ffffff;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .sidebar-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  
+  .upload-button {
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .upload-button:hover {
+    background-color: #4338ca;
+  }
+  
+  .hidden-file-input {
+    display: none;
+  }
+  
+  .document-list {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .empty-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    color: #6b7280;
+    padding: 2rem 1rem;
+  }
+  
+  .empty-list p {
+    margin-bottom: 1rem;
+  }
+  
+  .upload-first-document {
+    padding: 0.5rem 1rem;
+    background-color: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .upload-first-document:hover {
+    background-color: #e5e7eb;
+  }
+  
+  .document-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background-color: #f9fafb;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  
+  .document-item:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .document-item.uploading {
+    border: 1px solid #e5e7eb;
+  }
+  
+  .document-icon {
+    color: #4f46e5;
+    flex-shrink: 0;
+  }
+  
+  .document-info {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .document-name-container {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+  }
+  
+  .document-name {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+  
+  .document-size {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-left: 0.5rem;
+  }
+  
+  .progress-bar {
+    height: 4px;
+    background-color: #e5e7eb;
+    border-radius: 2px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+  }
+  
+  .progress {
+    height: 100%;
+    background-color: #4f46e5;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+  
+  .remove-document-btn {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+  }
+  
+  .document-item:hover .remove-document-btn {
+    opacity: 1;
+  }
+  
+  .remove-document-btn:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
+  }
+  
+  .processing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .sidebar-footer {
+    padding: 1rem;
+    border-top: 1px solid #e5e7eb;
+    color: #6b7280;
+    font-size: 0.875rem;
+    text-align: center;
+  }
+  
+  @media (max-width: 768px) {
+    .document-sidebar {
+      width: 240px;
+    }
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    .document-sidebar {
+      background-color: #1f2937;
+      border-color: #374151;
+    }
+    
+    .sidebar-header {
+      border-color: #374151;
+    }
+    
+    .upload-first-document {
+      background-color: #374151;
+      border-color: #4b5563;
+      color: #e5e7eb;
+    }
+    
+    .upload-first-document:hover {
+      background-color: #4b5563;
+    }
+    
+    .document-item {
+      background-color: #111827;
+    }
+    
+    .document-item:hover {
+      background-color: #1f2937;
+    }
+    
+    .document-size {
+      color: #9ca3af;
+    }
+    
+    .progress-bar {
+      background-color: #374151;
+    }
+    
+    .processing-indicator {
+      background-color: #111827;
+      border-color: #374151;
+    }
+    
+    .sidebar-footer {
+      border-color: #374151;
+    }
+    
+    .remove-document-btn:hover {
+      background-color: rgba(239, 68, 68, 0.1);
+    }
+  }

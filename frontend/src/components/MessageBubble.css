@@ -1,0 +1,128 @@
+.message-bubble {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .message-avatar {
+    flex-shrink: 0;
+  }
+  
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  
+  .user-avatar {
+    background-color: #4f46e5;
+    color: white;
+  }
+  
+  .ai-avatar {
+    background-color: #10b981;
+    color: white;
+  }
+  
+  .message-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .message-text {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    position: relative;
+  }
+  
+  .user .message-text {
+    background-color: #f3f4f6;
+    border-bottom-right-radius: 0;
+  }
+  
+  .ai .message-text {
+    background-color: #f0f9ff;
+    border-bottom-left-radius: 0;
+  }
+  
+  .message-text p {
+    margin: 0;
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
+  }
+  
+  .message-text p:last-child {
+    margin-bottom: 0;
+  }
+  
+  .message-timestamp {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    align-self: flex-end;
+  }
+  
+  .message-sources {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(203, 213, 225, 0.5);
+  }
+  
+  .sources-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #4b5563;
+  }
+  
+  .sources-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 0;
+    list-style-type: none;
+  }
+  
+  .source-item {
+    background-color: rgba(203, 213, 225, 0.5);
+    color: #4b5563;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    .user .message-text {
+      background-color: #2a3441;
+    }
+    
+    .ai .message-text {
+      background-color: #0f3a5e;
+    }
+    
+    .message-timestamp {
+      color: #6b7280;
+    }
+    
+    .sources-title {
+      color: #d1d5db;
+    }
+    
+    .source-item {
+      background-color: rgba(55, 65, 81, 0.5);
+      color: #9ca3af;
+    }
+    
+    .message-sources {
+      border-color: rgba(55, 65, 81, 0.5);
+    }
+  }

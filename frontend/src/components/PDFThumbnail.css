@@ -1,0 +1,36 @@
+.pdf-thumbnail {
+    width: 100%;
+    aspect-ratio: 1 / 1.4142; /* Approximates A4 paper ratio */
+    background-color: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  
+  .thumbnail-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .thumbnail-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #6b7280;
+    background-color: #f9fafb;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    .pdf-thumbnail {
+      background-color: #374151;
+    }
+    
+    .thumbnail-placeholder {
+      background-color: #2a3441;
+      color: #9ca3af;
+    }
+  }
