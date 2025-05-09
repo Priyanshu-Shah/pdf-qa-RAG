@@ -3,23 +3,17 @@ from flask_cors import CORS
 import logging
 from datetime import datetime
 from dotenv import load_dotenv
-load_dotenv()
-
-# Import config and utility modules
 import config
 from utils.pdf_processor import PDFProcessor
 from utils.vector_store import VectorStoreService
 from utils.llm_service import LLMService
+load_dotenv()
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Initialize Flask application
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Initialize services
 pdf_processor = PDFProcessor(
     pdf_storage_path=config.PDF_STORAGE_PATH,
     chunk_size=config.CHUNK_SIZE,
@@ -35,21 +29,31 @@ llm_service = LLMService(
     gemini_api_key=config.GEMINI_API_KEY
 )
 
+"""
+The flask backend has the following routes:
+1. /api/upload: Upload a PDF file and process it. (use the pdf_processor to extract text and chunk it)
+2. /api/chat: Send a message to the LLM and get a response based on the uploaded files.
+3. /api/files: Get a list of all uploaded files. (to display on the side collumn)
+4. /api/files/<file_id>: Delete a file from storage and vector database.
+"""
+
 @app.route('/api/upload', methods=['POST'])
 def upload_pdf():
+    # We will first save the pdf, update metadata, extarct chunks, and chunk mapping, and add those to the vector store
     try:
+        # Save pdf
         pdf_file = request.files['pdf']
         file_info = pdf_processor.save_pdf(pdf_file)
+        # Update metadata with the current date
         file_info['dateUploaded'] = datetime.now().isoformat()
         
         # Process the PDF (extract text, chunk, etc.)
         chunks, chunk_page_map, updated_file_info = pdf_processor.process_pdf(file_info)
-        
         # Add to vector store
         if chunks and updated_file_info["status"] == "processed":
             vector_store.add_file(updated_file_info, chunks, chunk_page_map)
         
-        # Return file info to client
+        # Return file info to frontend to show the file size, path and such
         return jsonify({
             "fileId": updated_file_info["id"],
             "filename": updated_file_info["name"],
@@ -67,23 +71,19 @@ def upload_pdf():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """
-    Handle Q&A queries against uploaded documents
-    """
+    # The chat route just takes a message and a list of file IDs, and returns the response from the LLM
     try:
-        # Get request data
+        # Get request data (which has our message and the file_ids)
         data = request.json
-        
         if not data:
             return jsonify({"error": "No data provided"}), 400
         
         message = data.get('message', '')
         file_ids = data.get('fileIds', [])
-        
         if not message:
             return jsonify({"error": "No message provided"}), 400
         
-        # Validate file IDs
+        # Check if file IDs even exist in the vector store
         valid_file_ids = []
         for file_id in file_ids:
             if vector_store.get_file_metadata(file_id):
@@ -95,7 +95,7 @@ def chat():
                 "sources": []
             })
         
-        # Query vector store for relevant chunks
+        # Query vector store to find relevant chunks from the vector store based on the message and file IDs
         context_docs = vector_store.query(message, valid_file_ids)
         
         # Generate response from LLM
@@ -112,9 +112,8 @@ def chat():
 
 @app.route('/api/files', methods=['GET'])
 def get_files():
-    """
-    Get list of all uploaded files
-    """
+    #This returns a list of all files in the vector store, along with their metadata
+    # This is useful for the frontend to show the files in the side column and for the querying process
     try:
         files = vector_store.get_file_metadata()
         
@@ -136,21 +135,14 @@ def get_files():
 
 @app.route('/api/files/<file_id>', methods=['DELETE'])
 def delete_file(file_id):
-    """
-    Delete a file from storage and vector database
-    """
     try:
-        # Log the request
-        logger.info(f"Delete request received for file ID: {file_id}")
-        
-        # Check if file exists
+        # Ensure that the file exists
         file_info = vector_store.get_file_metadata(file_id)
         if not file_info:
             logger.warning(f"File not found: {file_id}")
-            # Return a 404 with a descriptive message
             return jsonify({"error": "File not found", "fileId": file_id}), 404
         
-        # Remove from vector store (which also removes the PDF file)
+        # Remove from vector store
         success = vector_store.remove_file(file_id)
         
         if success:

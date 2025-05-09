@@ -18,8 +18,8 @@ class PDFProcessor:
         )
     
     def save_pdf(self, pdf_file):
-        """Save uploaded PDF to storage with a unique ID"""
         filename = pdf_file.filename
+        #We use UUID to index files
         file_id = str(uuid.uuid4())
         
         # Get extension from original filename or default to .pdf
@@ -33,10 +33,10 @@ class PDFProcessor:
         
         # Save the file
         pdf_file.save(file_path)
-        
         # Get file size
         file_size = os.path.getsize(file_path)
         
+        #This information is usefull for the frontend to show the file size, path and such
         return {
             "id": file_id,
             "name": filename,
@@ -46,10 +46,12 @@ class PDFProcessor:
         }
 
     def extract_text(self, file_path):
-        """Extract text from PDF"""
         try:
+            # we use the pdfreader from pypdf
             pdf = PdfReader(file_path)
             text = ""
+            # Dictionary to map page numbers to character positions
+            # This will help us to know which chunk belongs to which page
             page_map = {}
             current_pos = 0
             
@@ -70,7 +72,6 @@ class PDFProcessor:
             raise
     
     def chunk_text(self, text):
-        """Split text into chunks for embedding"""
         try:
             chunks = self.text_splitter.split_text(text)
             return chunks
@@ -79,10 +80,9 @@ class PDFProcessor:
             raise
 
     def map_chunks_to_pages(self, chunks, text, page_map):
-        """Map each chunk to its source page numbers"""
         chunk_page_map = []
         
-        # For each chunk, find which page(s) it comes from
+        # For each chunk, find which page it comes from
         for chunk in chunks:
             chunk_start = text.find(chunk)
             if chunk_start == -1:
@@ -107,10 +107,9 @@ class PDFProcessor:
         return chunk_page_map
 
     def process_pdf(self, file_info):
-        """Process a PDF file: extract text, chunk it, and map chunks to pages"""
+        #This is our main function, it will load the pdf, extract the text, chunk it and map the chunks to pages and update the file info
         try:
             file_path = file_info["path"]
-            
             # Extract text from PDF
             text, page_map, num_pages = self.extract_text(file_path)
             
