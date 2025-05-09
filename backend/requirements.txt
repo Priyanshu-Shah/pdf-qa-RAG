@@ -13,3 +13,9 @@ python-dotenv
 werkzeug
 schedule
 torch
+unstructured
+pdf2image
+pytesseract
+layoutparser
+pdfminer.six
+pi_heif

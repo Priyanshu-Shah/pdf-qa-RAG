@@ -188,6 +188,18 @@
     text-align: center;
   }
   
+  .document-method {
+    font-size: 0.7rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .document-method {
+      color: #9ca3af;
+    }
+  }
+  
   @media (max-width: 768px) {
     .document-sidebar {
       width: 240px;

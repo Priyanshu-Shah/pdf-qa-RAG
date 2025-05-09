@@ -1,24 +1,28 @@
 import { useRef } from 'react';
 import { useFileContext } from '../context/FileContext';
 import LoadingIndicator from './LoadingIndicator';
+import ProcessingMethodSelector from './ProcessingMethodSelector';
 import './DocumentSidebar.css';
 
 function DocumentSidebar() {
   const fileInputRef = useRef(null);
-  const { uploadedFiles, uploadFile, removeFile, isProcessing } = useFileContext();
+  const { uploadedFiles, uploadFile, removeFile, isProcessing, processingMethod } = useFileContext();
   
   const handleFileChange = async (e) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       await processFiles(Array.from(files));
     }
-    // Clear the input to allow selecting the same file again
     e.target.value = '';
   };
   
   const processFiles = async (files) => {
+    // Log the currently selected processing method from context
+    console.log('Current processing method from context:', processingMethod);
+    
     for (const file of files) {
       if (file.type === 'application/pdf') {
+        // Don't try to access file.method here as it doesn't exist yet
         await uploadFile(file);
       }
     }
@@ -57,6 +61,8 @@ function DocumentSidebar() {
         />
       </div>
       
+      <ProcessingMethodSelector />
+      
       {isProcessing && (
         <div className="processing-indicator">
           <LoadingIndicator />
@@ -82,9 +88,19 @@ function DocumentSidebar() {
               className={`document-item ${file.status === 'uploading' ? 'uploading' : ''}`}
             >
               <div className="document-icon">
-                <svg viewBox="0 0 24 24" width="24" height="24">
-                  <path fill="currentColor" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm0 16H6v-2h8v2zm0-4H6v-2h8v2zm-3-5V3.5L18.5 11H11z" />
-                </svg>
+                {file.method === 'semantic' ? (
+                  <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="currentColor" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 12H8v-2h8v2zm0-4H8V8h8v2zm-3-5V3.5L18.5 9H13z" />
+                  </svg>
+                ) : file.method === 'layout' ? (
+                  <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 7h5v5h-5v-5zM5 7h5v5H5V7zm0 10v-3h5v3H5zm12 0v-3h2v3h-2z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="currentColor" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm0 16H6v-2h8v2zm0-4H6v-2h8v2zm-3-5V3.5L18.5 11H11z" />
+                  </svg>
+                )}
               </div>
               
               <div className="document-info">
@@ -98,6 +114,12 @@ function DocumentSidebar() {
                 {file.status === 'uploading' && (
                   <div className="progress-bar">
                     <div className="progress" style={{width: `${file.progress}%`}}></div>
+                  </div>
+                )}
+                {file.method && file.status === 'processed' && (
+                  <div className="document-method">
+                    {file.method === 'semantic' ? '📑 Semantic' : 
+                     file.method === 'layout' ? '📊 Layout' : '📄 Standard'}
                   </div>
                 )}
               </div>

@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useContext } from 'react';
-import { uploadPDF, deleteFile, getUploadedFiles } from '../services/api';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { uploadPDF, getUploadedFiles, deleteFile } from '../services/api';
 
 // Create context
 const FileContext = createContext();
@@ -10,144 +10,159 @@ export function FileProvider({ children }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({});
   const [error, setError] = useState(null);
+  const [processingMethod, setProcessingMethod] = useState('standard'); // Default method
 
-  /**
-   * Upload and process a new PDF file
-   */
-  const uploadFile = async (file) => {
-    // Create a temporary file object with pending status
-    const tempFileId = Date.now() + Math.random().toString(36).substring(2, 10);
-    const newFile = {
-      id: tempFileId,
-      file: file,
-      name: file.name,
-      size: file.size,
-      status: 'uploading',
-      progress: 0,
-      thumbnail: null,
-      dateUploaded: new Date().toISOString()
-    };
-
-    // Add to state immediately to show in UI
-    setUploadedFiles(prev => [...prev, newFile]);
-    setIsProcessing(true);
-    setError(null);
-
-    try {
-      // Track upload progress
-      const onProgress = (progress) => {
-        setUploadProgress(prev => ({
-          ...prev,
-          [tempFileId]: progress
-        }));
-        
-        setUploadedFiles(prev => 
-          prev.map(f => 
-            f.id === tempFileId 
-              ? { ...f, progress: progress } 
-              : f
-          )
-        );
-      };
-
-      // Send to server
-      const response = await uploadPDF(file, onProgress);
-      
-      // Update file with server response
-      setUploadedFiles(prev => 
-        prev.map(f => 
-          f.id === tempFileId 
-            ? { 
-                ...f, 
-                id: response.fileId || f.id, 
-                status: 'processed',
-                progress: 100,
-                serverData: response.data || {} 
-              } 
-            : f
-        )
-      );
-
-    } catch (err) {
-      console.error('File upload error:', err);
-      setError(err.message || 'Failed to upload file');
-      
-      // Update file status to error
-      setUploadedFiles(prev => 
-        prev.map(f => 
-          f.id === tempFileId 
-            ? { ...f, status: 'error', error: err.message } 
-            : f
-        )
-      );
-    } finally {
-      setIsProcessing(false);
-    }
+// Update the uploadFile function to correctly handle the method from server response:
+const uploadFile = async (file) => {
+  // Create a temporary file object with pending status
+  const tempFileId = Date.now() + Math.random().toString(36).substring(2, 10);
+  const newFile = {
+    id: tempFileId,
+    file: file,
+    name: file.name,
+    size: file.size,
+    status: 'uploading',
+    progress: 0,
+    method: processingMethod, // Initially set to selected method
+    dateUploaded: new Date().toISOString()
   };
 
-  /**
-   * Remove a file from the list and optionally from the server
-   */
+  // Add to state immediately to show in UI
+  setUploadedFiles(prev => [...prev, newFile]);
+  setIsProcessing(true);
+  setError(null);
+
+  try {
+    // Track upload progress
+    const onProgress = (progress) => {
+      setUploadProgress(prev => ({
+        ...prev,
+        [tempFileId]: progress
+      }));
+      
+      setUploadedFiles(prev => 
+        prev.map(f => 
+          f.id === tempFileId 
+            ? { ...f, progress: progress } 
+            : f
+        )
+      );
+    };
+
+    // Send to server with processing method
+    const response = await uploadPDF(file, onProgress, processingMethod);
+    console.log("File upload response:", response);
+    
+    // Get the actual method used from the server response
+    const actualMethod = response.data?.method || processingMethod;
+    
+    console.log("File uploaded with method:", actualMethod);
+
+    if(actualMethod != processingMethod) {
+      console.log("Processing method fallen-back from", processingMethod, "to", actualMethod, "likely due to library inconsistency at backend");
+      setProcessingMethod(actualMethod);
+    }
+
+    // Update file with server response
+    setUploadedFiles(prev => 
+      prev.map(f => 
+        f.id === tempFileId 
+          ? { 
+              ...f, 
+              id: response.fileId || f.id, 
+              status: 'processed',
+              progress: 100,
+              serverData: response.data || {},
+              method: actualMethod // Set the method returned from server
+            } 
+          : f
+      )
+    );
+
+  } catch (err) {
+    console.error('File upload error:', err);
+    setError(err.message || 'Failed to upload file');
+    
+    // Update file status to error
+    setUploadedFiles(prev => 
+      prev.map(f => 
+        f.id === tempFileId 
+          ? { ...f, status: 'error', error: err.message } 
+          : f
+      )
+    );
+  } finally {
+    setIsProcessing(false);
+  }
+};
+
+
   const removeFile = async (fileId, removeFromServer = true) => {
     try {
       if (removeFromServer) {
-        await deleteFile(fileId);
+        try {
+          await deleteFile(fileId);
+        } catch (err) {
+          console.error('Error removing file from server:', err);
+          setError(err.message || 'Failed to remove file from server');
+        }
+      }
+
+      setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+      setUploadProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[fileId];
+        return newProgress;
+      });
+    } catch (err) {
+      console.error('Error in removeFile:', err);
+    }
+  };
+
+  // Fetch all uploaded files from server
+  const fetchFiles = async () => {
+    try {
+      setError(null);
+      const files = await getUploadedFiles();
+      
+      if (files && Array.isArray(files)) {
+        setUploadedFiles(files.map(file => ({
+          id: file.id,
+          name: file.name,
+          size: file.size,
+          status: 'processed',
+          progress: 100,
+          dateUploaded: file.dateUploaded,
+          method: file.method || 'standard'
+        })));
       }
     } catch (err) {
-      console.error('Error removing file from server:', err);
-      setError(err.message || 'Failed to remove file from server');
-    }
-
-    // Remove from state regardless of server response
-    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
-    
-    // Also clean up progress data
-    setUploadProgress(prev => {
-      const newProgress = { ...prev };
-      delete newProgress[fileId];
-      return newProgress;
-    });
-  };
-
-  /**
-   * Fetch all uploaded files from server
-   */
-  const fetchFiles = async () => {
-    setIsProcessing(true);
-    setError(null);
-    
-    try {
-      const files = await getUploadedFiles();
-      setUploadedFiles(files.map(file => ({
-        ...file,
-        status: 'processed',
-        progress: 100
-      })));
-    } catch (err) {
       console.error('Error fetching files:', err);
-      setError(err.message || 'Failed to fetch uploaded files');
-    } finally {
-      setIsProcessing(false);
+      setError('Failed to load files');
     }
   };
 
-  /**
-   * Update status of a single file
-   */
+  // Update status of a single file
   const updateFileStatus = (fileId, status) => {
     setUploadedFiles(prev => 
-      prev.map(file => 
-        file.id === fileId ? { ...file, status } : file
+      prev.map(f => 
+        f.id === fileId 
+          ? { ...f, status: status } 
+          : f
       )
     );
   };
   
-  /**
-   * Check if we have any files that are ready to be used in chat
-   */
+  // Check if we have any files that are ready to be used in chat
   const hasProcessedFiles = () => {
     return uploadedFiles.some(file => file.status === 'processed');
   };
+
+  // Load files on initial render
+  useEffect(() => {
+    fetchFiles();
+    console.log("filecontext - current processing method:", processingMethod);
+  }, [processingMethod]);
 
   // Create context value object
   const contextValue = {
@@ -155,13 +170,13 @@ export function FileProvider({ children }) {
     isProcessing,
     uploadProgress,
     error,
-    setUploadedFiles,
-    setIsProcessing,
     uploadFile,
     removeFile,
     fetchFiles,
     updateFileStatus,
-    hasProcessedFiles
+    hasProcessedFiles,
+    processingMethod,
+    setProcessingMethod
   };
 
   return (
@@ -174,7 +189,7 @@ export function FileProvider({ children }) {
 // Custom hook for easier context consumption
 export function useFileContext() {
   const context = useContext(FileContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useFileContext must be used within a FileProvider');
   }
   return context;

@@ -1,0 +1,140 @@
+.processing-method-selector {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.method-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.method-dropdown {
+  position: relative;
+}
+
+.selected-method {
+  display: flex;
+  align-items: center;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.selected-method:hover {
+  background-color: #e5e7eb;
+}
+
+.method-icon {
+  margin-right: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.method-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.dropdown-arrow {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  transition: transform 0.2s ease;
+}
+
+.method-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.25rem;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 10;
+}
+
+.method-option {
+  padding: 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.method-option:last-child {
+  border-bottom: none;
+}
+
+.method-option:hover {
+  background-color: #f9fafb;
+}
+
+.method-option.active {
+  background-color: #f0f9ff;
+}
+
+.method-option-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.method-description {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+@media (prefers-color-scheme: dark) {
+  .processing-method-selector {
+    border-color: #374151;
+  }
+
+  .method-label {
+    color: #9ca3af;
+  }
+
+  .selected-method {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #e5e7eb;
+  }
+
+  .selected-method:hover {
+    background-color: #374151;
+  }
+
+  .dropdown-arrow {
+    color: #6b7280;
+  }
+
+  .method-options {
+    background-color: #1f2937;
+    border-color: #374151;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  }
+
+  .method-option {
+    border-color: #374151;
+  }
+
+  .method-option:hover {
+    background-color: #111827;
+  }
+
+  .method-option.active {
+    background-color: #082f49;
+  }
+
+  .method-description {
+    color: #9ca3af;
+  }
+}
