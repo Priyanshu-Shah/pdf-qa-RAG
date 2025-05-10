@@ -11,23 +11,33 @@ function ProcessingMethodSelector() {
       id: 'standard',
       name: 'Standard',
       description: 'Basic text extraction and character-based chunking.',
-      icon: '📄'
+      icon: '📄',
+      available: true
     },
     {
       id: 'semantic',
-      name: 'Semantic',
-      description: 'Structure-aware extraction with semantic chunking.',
-      icon: '📑'
+      name: 'Semantic (Coming Soon)',
+      description: 'Structure-aware extraction with semantic chunking. Currently under development.',
+      icon: '🔧', // Changed to indicate it's under construction
+      available: false,
+      badge: 'In Progress'
     },
     {
       id: 'layout',
       name: 'Layout',
       description: 'Advanced layout detection with OCR and visual analysis.',
-      icon: '📊'
+      icon: '📊',
+      available: true
     }
   ];
   
-  const handleSelectMethod = (methodId) => {
+  const handleSelectMethod = (methodId, isAvailable) => {
+    if (!isAvailable) {
+      // Don't change method if not available, just close dropdown
+      setIsOpen(false);
+      return;
+    }
+    
     setProcessingMethod(methodId);
     console.log(`Processing method changed to: ${methodId}`);
     setIsOpen(false);
@@ -53,12 +63,13 @@ function ProcessingMethodSelector() {
             {methods.map((method) => (
               <div 
                 key={method.id}
-                className={`method-option ${method.id === processingMethod ? 'active' : ''}`}
-                onClick={() => handleSelectMethod(method.id)}
+                className={`method-option ${method.id === processingMethod ? 'active' : ''} ${!method.available ? 'disabled' : ''}`}
+                onClick={() => handleSelectMethod(method.id, method.available)}
               >
                 <div className="method-option-header">
                   <span className="method-icon">{method.icon}</span>
                   <span className="method-name">{method.name}</span>
+                  {method.badge && <span className="method-badge">{method.badge}</span>}
                 </div>
                 <p className="method-description">{method.description}</p>
               </div>
