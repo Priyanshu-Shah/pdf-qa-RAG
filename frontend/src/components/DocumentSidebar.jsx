@@ -38,6 +38,7 @@ function DocumentSidebar() {
     }
   };
 
+
   return (
     <div className="document-sidebar">
       <div className="sidebar-header">

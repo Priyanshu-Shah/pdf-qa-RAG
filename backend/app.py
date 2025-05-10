@@ -120,45 +120,62 @@ def upload_pdf():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    # The chat route just takes a message and a list of file IDs, and returns the response from the LLM
     try:
-        # Get request data (which has our message and the file_ids)
+        # Get request data
         data = request.json
         if not data:
             return jsonify({"error": "No data provided"}), 400
         
         message = data.get('message', '')
         file_ids = data.get('fileIds', [])
+        logger.info(f"Chat request with file ids: {file_ids}") 
+        
         if not message:
             return jsonify({"error": "No message provided"}), 400
         
-        # Check if file IDs even exist in the vector store
+        # Check if file IDs exist in the vector store
         valid_file_ids = []
         for file_id in file_ids:
-            if vector_store.get_file_metadata(file_id):
+            metadata = vector_store.get_file_metadata(file_id)
+            if metadata:
                 valid_file_ids.append(file_id)
+                logger.info(f"Valid file found: {file_id} - {metadata.get('name', 'unknown')}")
+            else:
+                logger.warning(f"File ID not found in vector store: {file_id}")
         
+        # Require valid documents
         if not valid_file_ids:
+            logger.warning("No valid documents found in request")
             return jsonify({
                 "text": "No valid documents selected. Please upload and select at least one document.",
                 "sources": []
             })
         
-        # Query vector store to find relevant chunks from the vector store based on the message and file IDs
+        # Query vector store
         context_docs = vector_store.query(message, valid_file_ids)
+        logger.info(f"Retrieved {len(context_docs)} context documents from query")
         
-        # Generate response from LLM
+        if not context_docs:
+            logger.warning("No context found for query")
+            return jsonify({
+                "text": "I couldn't find any relevant information in your documents to answer this question.",
+                "sources": []
+            })
+        
+        # Generate response
         response = llm_service.generate_response(message, context_docs)
         
         return jsonify(response)
     
     except Exception as e:
         logger.error(f"Error processing chat request: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return jsonify({
             "text": f"Error processing your request: {str(e)}",
             "sources": []
         }), 500
-
+    
 @app.route('/api/files', methods=['GET'])
 def get_files():
     #This returns a list of all files in the vector store, along with their metadata

@@ -1,6 +1,8 @@
 import os
 from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores.utils import filter_complex_metadata
+from langchain.schema import Document
 import logging
 import json
 import time
@@ -83,6 +85,56 @@ class VectorStoreService:
                 json.dump(self.file_metadata, f)
         except Exception as e:
             logger.error(f"Error saving metadata: {e}")
+
+    def _save_file_metadata(self, file_info):
+        try:
+            # Make sure file_info has an ID
+            if "id" not in file_info:
+                logger.error("File info missing ID")
+                return False
+            
+            # Clean the file_info to ensure it contains only simple types
+            clean_info = {}
+            for key, value in file_info.items():
+                if value is None:
+                    # Skip None values
+                    continue
+                elif isinstance(value, (str, int, float, bool)):
+                    # Keep simple values
+                    clean_info[key] = value
+                elif isinstance(value, (list, tuple)) and all(isinstance(x, (str, int, float, bool)) for x in value):
+                    # Keep lists/tuples of simple values
+                    clean_info[key] = list(value)
+                elif isinstance(value, dict):
+                    # For dictionaries, keep only simple key-value pairs
+                    clean_dict = {}
+                    for k, v in value.items():
+                        if v is not None and isinstance(v, (str, int, float, bool)):
+                            clean_dict[k] = v
+                    if clean_dict:
+                        clean_info[key] = clean_dict
+                else:
+                    # Convert other complex objects to strings
+                    try:
+                        clean_info[key] = str(value)
+                    except:
+                        # If conversion fails, skip this field
+                        pass
+            
+            # Save to file metadata dictionary
+            file_id = clean_info["id"]
+            self.file_metadata[file_id] = clean_info
+            
+            # Update access time
+            self._update_file_access(file_id)
+            
+            # Save to disk
+            self._save_metadata()
+            logger.info(f"Saved metadata for file {file_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error saving file metadata: {e}")
+            return False
     
     def get_file_metadata(self, file_id=None):
         """Get file metadata for one or all files"""
@@ -162,50 +214,90 @@ class VectorStoreService:
         except Exception as e:
             logger.error(f"Error during expired file cleanup: {e}")
             return []
-    
+
     def add_file(self, file_info, chunks, chunk_page_map):
+        """Add file chunks to vector store"""
         try:
-            # Create document metadatas for each chunk
-            metadatas = []
-            for chunk_info in chunk_page_map:
-                chunk_pages = chunk_info["pages"]
-                page = min(chunk_pages) if chunk_pages else None
+            logger.info(f"Adding file {file_info['id']} to vector store with {len(chunks)} chunks")
+            
+            documents = []
+            
+            for i, chunk in enumerate(chunks):
+                try:
+                    # Explicitly ensure chunk is a string
+                    if isinstance(chunk, Document):
+                        chunk_text = chunk.page_content
+                    elif isinstance(chunk, tuple) or isinstance(chunk, list):
+                        logger.warning(f"Chunk {i} is a {type(chunk).__name__}, using first element as text")
+                        chunk_text = str(chunk[0]) if chunk else ""
+                    else:
+                        chunk_text = str(chunk)
+                    
+                    # Create metadata as a plain dictionary
+                    metadata = {
+                        "file_id": str(file_info["id"]),
+                        "file_name": str(file_info["name"]),
+                        "chunk_id": i,
+                    }
+                    
+                    # Only add text preview if it's a reasonable length
+                    if chunk_text and len(chunk_text) > 0:
+                        metadata["text"] = chunk_text[:100] + "..."
+                    
+                    # Add page number if available
+                    if chunk_page_map and i in chunk_page_map:
+                        page_num = chunk_page_map[i]
+                        metadata["page"] = page_num
+                    
+                    # Skip the filter_complex_metadata function entirely
+                    # We'll manually filter metadata instead
+                    
+                    # Manually filter complex types
+                    clean_metadata = {}
+                    for key, value in metadata.items():
+                        if value is None:
+                            continue
+                        elif isinstance(value, (str, int, float, bool)):
+                            clean_metadata[key] = value
+                        else:
+                            try:
+                                # Convert other types to string
+                                clean_metadata[key] = str(value)
+                            except:
+                                pass
+                    
+                    # Create a document with clean metadata
+                    doc = Document(page_content=chunk_text, metadata=clean_metadata)
+                    
+                    # Add the document without further filtering
+                    documents.append(doc)
+                    
+                except Exception as chunk_error:
+                    logger.error(f"Error processing chunk {i}: {chunk_error}")
+                    # Continue with next chunk
+                    continue
                 
-                metadata = {
-                    "file_id": file_info["id"],
-                    "filename": file_info["name"],
-                    "page": page
-                }
-                metadatas.append(metadata)
-            
-            # Add chunks to vector database
-            chunks_text = [item["chunk"] for item in chunk_page_map]
-            self.db.add_texts(
-                texts=chunks_text,
-                metadatas=metadatas
-            )
-            
-            # Store file metadata
-            self.file_metadata[file_info["id"]] = {
-                "id": file_info["id"],
-                "name": file_info["name"],
-                "size": file_info["size"],
-                "pages": file_info["pages"],
-                "path": file_info["path"],
-                "dateUploaded": file_info.get("dateUploaded", "")
-            }
-            
-            # Update access log
-            self._update_file_access(file_info["id"])
-            
-            # Save metadata to disk
-            self._save_metadata()
-            
-            return True
+            # Add to vector store
+            if documents:
+                self.db.add_documents(documents)
+                logger.info(f"Added {len(documents)} documents to vector store")
+                
+                # Save file metadata
+                self._save_file_metadata(file_info)
+                
+                logger.info(f"Successfully added {len(documents)} chunks from {file_info['name']} to vector store")
+                return True
+            else:
+                logger.warning(f"No documents created for file {file_info['id']}")
+                return False
+                
         except Exception as e:
             logger.error(f"Error adding file to vector DB: {e}")
+            # Print stack trace for debugging
+            import traceback
+            logger.error(traceback.format_exc())
             return False
-    
+
     def remove_file(self, file_id):
         try:
             # Delete all chunks with this file_id from vector store
@@ -232,8 +324,10 @@ class VectorStoreService:
             return False
 
     def query(self, query_text, file_ids=None, top_k=5):
-        # We use similarity search function from the chroma library, which needs a parameter k for the number of results to return, we have set is as 5 by default
+        """Query vector store for relevant documents"""
         try:
+            logger.info(f"Querying with: '{query_text}', file_ids: {file_ids}, top_k: {top_k}")
+            
             # Update access times for queried files
             if file_ids:
                 for file_id in file_ids:
@@ -243,6 +337,7 @@ class VectorStoreService:
             filter_dict = {}
             if file_ids and len(file_ids) > 0:
                 filter_dict = {"file_id": {"$in": file_ids}}
+                logger.info(f"Using filter: {filter_dict}")
             
             # Perform similarity search
             results = self.db.similarity_search(
@@ -251,11 +346,22 @@ class VectorStoreService:
                 filter=filter_dict if filter_dict else None
             )
             
+            logger.info(f"Found {len(results)} results")
+            
             # Format results
             formatted_results = []
             for i, doc in enumerate(results):
                 # Assign decreasing relevance scores
                 relevance = 1.0 - (i * 0.1)
+                
+                # Debug each document's metadata
+                logger.debug(f"Document {i} metadata: {doc.metadata}")
+                
+                # Add file name from metadata or look it up
+                if "file_name" not in doc.metadata and "file_id" in doc.metadata:
+                    file_id = doc.metadata["file_id"]
+                    if file_id in self.file_metadata:
+                        doc.metadata["file_name"] = self.file_metadata[file_id].get("name", "Unknown Document")
                 
                 formatted_results.append({
                     "content": doc.page_content,
@@ -266,4 +372,7 @@ class VectorStoreService:
             return formatted_results
         except Exception as e:
             logger.error(f"Error querying vector DB: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return []
+        

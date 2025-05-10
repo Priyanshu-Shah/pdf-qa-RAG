@@ -154,39 +154,24 @@ class PDFProcessor:
             return text, page_map, num_pages, []
     
     def extract_with_layout(self, file_path):
-        """Extract text while preserving layout information"""
+        """Extract text with basic layout awareness using pytesseract directly"""
         try:
-            import layoutparser as lp
             import pdf2image
             import pytesseract
+
+            pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+            poppler_path = r"C:\Program Files\poppler-24.08.0\Library\bin"
             
             # Convert PDF to images
-            images = pdf2image.convert_from_path(file_path)
+            images = pdf2image.convert_from_path(file_path, poppler_path=poppler_path)
             
-            # Try to load OCR model
-            try:
-                ocr_agent = lp.TesseractAgent(languages='eng')
-            except Exception as ocr_error:
-                logger.error(f"Error loading OCR: {ocr_error}")
-                # Fall back if OCR fails
-                return self.extract_text_with_structure(file_path)
-            
-            # Try to load layout model
-            try:
-                model = lp.Detectron2LayoutModel(
-                    'lp://PubLayNet/mask_rcnn_X_101_32x8d_FPN_3x/config', 
-                    extra_config=["MODEL.ROI_HEADS.SCORE_THRESH_TEST", 0.5],
-                    label_map={0: "Text", 1: "Title", 2: "List", 3: "Table", 4: "Figure"}
-                )
-            except Exception as model_error:
-                logger.error(f"Error loading layout model: {model_error}")
-                # Fall back if model loading fails
-                return self.extract_text_with_structure(file_path)
-                
-            all_elements = []
             structured_text = ""
             page_map = {}
             current_pos = 0
+            
+            # Simple layout detection parameters
+            min_line_height = 30  # Pixels
+            title_font_size_threshold = 15  # Tesseract's font size estimation
             
             # Process each page
             for i, image in enumerate(images):
@@ -194,42 +179,44 @@ class PDFProcessor:
                 page_start = current_pos
                 page_text = ""
                 
-                try:
-                    # Detect layout
-                    layout = model.detect(image)
+                # Get OCR data with detailed info
+                ocr_data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
+                
+                # Group by line
+                line_boxes = {}
+                for j in range(len(ocr_data['text'])):
+                    if not ocr_data['text'][j].strip():
+                        continue
                     
-                    # Sort elements by their vertical position to maintain reading order
-                    sorted_blocks = sorted(layout, key=lambda block: block.coordinates[1])
+                    # Group by line number
+                    line_num = ocr_data['line_num'][j]
+                    if line_num not in line_boxes:
+                        line_boxes[line_num] = {
+                            'text': [],
+                            'conf': [],
+                            'height': ocr_data['height'][j],
+                            'font_size': float(ocr_data['conf'][j]) if ocr_data['conf'][j] != '-1' else 0
+                        }
                     
-                    # Process each element based on its type
-                    for block in sorted_blocks:
-                        element_type = block.type
-                        
-                        # Extract text with OCR
-                        segment_image = (image.crop(block.coordinates))
-                        text = ocr_agent.detect(segment_image)
-                        
-                        # Format based on element type
-                        if element_type == "Title":
-                            page_text += f"# {text.strip()}\n\n"
-                        elif element_type == "List":
-                            # Convert lines to list items
-                            list_items = text.strip().split("\n")
-                            for item in list_items:
-                                page_text += f"- {item.strip()}\n"
-                            page_text += "\n"
-                        elif element_type == "Table":
-                            page_text += f"[TABLE]\n{text.strip()}\n[/TABLE]\n\n"
-                        else:
-                            page_text += f"{text.strip()}\n\n"
-                            
-                except Exception as page_error:
-                    logger.error(f"Error processing page {page_num}: {page_error}")
-                    # If layout processing fails, try to extract just the text
-                    try:
-                        page_text = pytesseract.image_to_string(image)
-                    except:
-                        page_text = f"[Failed to extract text from page {page_num}]"
+                    line_boxes[line_num]['text'].append(ocr_data['text'][j])
+                    line_boxes[line_num]['conf'].append(int(ocr_data['conf'][j]) if ocr_data['conf'][j] != '-1' else 0)
+                
+                # Process lines in order
+                for line_num in sorted(line_boxes.keys()):
+                    line = line_boxes[line_num]
+                    text = ' '.join(line['text'])
+                    
+                    # Skip empty lines
+                    if not text.strip():
+                        continue
+                    
+                    # Determine if this is a heading based on font size or height
+                    if (line['height'] > min_line_height or line['font_size'] > title_font_size_threshold) and len(text) < 100:
+                        # This is likely a heading
+                        page_text += f"# {text.strip()}\n\n"
+                    else:
+                        # Regular paragraph
+                        page_text += f"{text.strip()}\n\n"
                 
                 # Add the page text to the full document text
                 structured_text += page_text
@@ -241,10 +228,10 @@ class PDFProcessor:
             return structured_text, page_map, len(images), []
                 
         except Exception as e:
-            logger.error(f"Error in layout-aware processing: {e}")
+            logger.error(f"Error in simplified layout-aware processing: {e}")
             # Fall back to structured extraction
             return self.extract_text_with_structure(file_path)
-    
+
     def chunk_text(self, text, method="recursive"):
         """Chunk text using the specified method"""
         try:
@@ -396,8 +383,8 @@ class PDFProcessor:
         except Exception as e:
             logger.error(f"Error in layout-aware PDF processing: {e}")
             # Fall back to semantic processing
-            logger.info("Falling back to semantic processing")
-            return self.process_semantic(file_info)
+            logger.info("Falling back to standard processing")
+            return self.process_standard(file_info)
     
     def process_pdf(self, file_info, method="standard"):
         """Process a PDF file using the specified method"""

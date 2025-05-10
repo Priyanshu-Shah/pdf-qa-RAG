@@ -22,6 +22,17 @@ function ChatInterface() {
       textareaRef.current.style.height = `${Math.min(scrollHeight, 120)}px`;
     }
   }, [message]);
+
+  // Add this near the top of your component
+  useEffect(() => {
+    // Log whenever uploaded files change
+    console.log("Uploaded files updated:", uploadedFiles);
+    
+    // Automatically select all processed files if needed
+    const processedFiles = uploadedFiles.filter(file => file.status === 'processed');
+    console.log("Processed files:", processedFiles);
+
+  }, [uploadedFiles]);
   
   // Scroll to bottom when messages change
   useEffect(() => {

@@ -29,6 +29,7 @@ class LLMService:
     def generate_response(self, query, context_docs):
         try:
             if not context_docs:
+                logger.warning("No context documents provided for query")
                 return {
                     "text": "I couldn't find any relevant information in your documents to answer this question.",
                     "sources": []
@@ -40,12 +41,21 @@ class LLMService:
             # Create source references
             sources = []
             for doc in context_docs:
-                meta = doc["metadata"]
-                sources.append({
-                    "fileId": meta.get("file_id", ""),
-                    "title": meta.get("filename", "Unknown Document"),
-                    "page": meta.get("page")
-                })
+                meta = doc.get("metadata", {})
+                file_id = meta.get("file_id", "")
+                file_name = meta.get("file_name", meta.get("filename", "Unknown Document"))
+                page = meta.get("page", None)
+                
+                source_entry = {
+                    "fileId": file_id,
+                    "title": file_name
+                }
+                
+                if page is not None:
+                    source_entry["page"] = page
+                    
+                sources.append(source_entry)
+
             
             # Create prompt with context and the query, the context consists of the documents retrieved from the vector store, the query is the question asked by the user
             system_prompt = """You are an AI assistant that answers questions based on provided documents.
