@@ -123,6 +123,44 @@
   cursor: not-allowed;
 }
 
+/* Selected documents indicator */
+.selected-docs-indicator {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #f3f4f6;
+  border-radius: 6px;
+  margin: 8px 12px;
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.selected-docs-icon {
+  margin-right: 8px;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+}
+
+.selected-docs-info {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selected-docs-names {
+  font-weight: 500;
+  color: #1f2937;
+  margin-left: 4px;
+  max-width: 60%;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
 @media (prefers-color-scheme: dark) {
   .chat-container {
     background-color: #111827;

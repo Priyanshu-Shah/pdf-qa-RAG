@@ -7,95 +7,124 @@ const FileContext = createContext();
 
 export function FileProvider({ children }) {
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [selectedFileIds, setSelectedFileIds] = useState([]); // Add this line
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({});
   const [error, setError] = useState(null);
   const [processingMethod, setProcessingMethod] = useState('standard'); // Default method
 
-// Update the uploadFile function to correctly handle the method from server response:
-const uploadFile = async (file) => {
-  // Create a temporary file object with pending status
-  const tempFileId = Date.now() + Math.random().toString(36).substring(2, 10);
-  const newFile = {
-    id: tempFileId,
-    file: file,
-    name: file.name,
-    size: file.size,
-    status: 'uploading',
-    progress: 0,
-    method: processingMethod, // Initially set to selected method
-    dateUploaded: new Date().toISOString()
-  };
+  // Update the uploadFile function to correctly handle the method from server response:
+  const uploadFile = async (file) => {
+    // Create a temporary file object with pending status
+    const tempFileId = Date.now() + Math.random().toString(36).substring(2, 10);
+    const newFile = {
+      id: tempFileId,
+      file: file,
+      name: file.name,
+      size: file.size,
+      status: 'uploading',
+      progress: 0,
+      method: processingMethod, // Initially set to selected method
+      dateUploaded: new Date().toISOString()
+    };
 
-  // Add to state immediately to show in UI
-  setUploadedFiles(prev => [...prev, newFile]);
-  setIsProcessing(true);
-  setError(null);
+    // Add to state immediately to show in UI
+    setUploadedFiles(prev => [...prev, newFile]);
+    setIsProcessing(true);
+    setError(null);
 
-  try {
-    // Track upload progress
-    const onProgress = (progress) => {
-      setUploadProgress(prev => ({
-        ...prev,
-        [tempFileId]: progress
-      }));
+    try {
+      // Track upload progress
+      const onProgress = (progress) => {
+        setUploadProgress(prev => ({
+          ...prev,
+          [tempFileId]: progress
+        }));
+        
+        setUploadedFiles(prev => 
+          prev.map(f => 
+            f.id === tempFileId 
+              ? { ...f, progress: progress } 
+              : f
+          )
+        );
+      };
+
+      // Send to server with processing method
+      const response = await uploadPDF(file, onProgress, processingMethod);
+      console.log("File upload response:", response);
       
+      // Get the actual method used from the server response
+      const actualMethod = response.data?.method || processingMethod;
+      
+      console.log("File uploaded with method:", actualMethod);
+
+      if(actualMethod != processingMethod) {
+        console.log("Processing method fallen-back from", processingMethod, "to", actualMethod, "likely due to library inconsistency at backend");
+        setProcessingMethod(actualMethod);
+      }
+
+      // Update file with server response
       setUploadedFiles(prev => 
         prev.map(f => 
           f.id === tempFileId 
-            ? { ...f, progress: progress } 
+            ? { 
+                ...f, 
+                id: response.fileId || f.id, 
+                status: 'processed',
+                progress: 100,
+                serverData: response.data || {},
+                method: actualMethod // Set the method returned from server
+              } 
             : f
         )
       );
-    };
 
-    // Send to server with processing method
-    const response = await uploadPDF(file, onProgress, processingMethod);
-    console.log("File upload response:", response);
-    
-    // Get the actual method used from the server response
-    const actualMethod = response.data?.method || processingMethod;
-    
-    console.log("File uploaded with method:", actualMethod);
-
-    if(actualMethod != processingMethod) {
-      console.log("Processing method fallen-back from", processingMethod, "to", actualMethod, "likely due to library inconsistency at backend");
-      setProcessingMethod(actualMethod);
+    } catch (err) {
+      console.error('File upload error:', err);
+      setError(err.message || 'Failed to upload file');
+      
+      // Update file status to error
+      setUploadedFiles(prev => 
+        prev.map(f => 
+          f.id === tempFileId 
+            ? { ...f, status: 'error', error: err.message } 
+            : f
+        )
+      );
+    } finally {
+      setIsProcessing(false);
     }
+  };
 
-    // Update file with server response
-    setUploadedFiles(prev => 
-      prev.map(f => 
-        f.id === tempFileId 
-          ? { 
-              ...f, 
-              id: response.fileId || f.id, 
-              status: 'processed',
-              progress: 100,
-              serverData: response.data || {},
-              method: actualMethod // Set the method returned from server
-            } 
-          : f
-      )
+  const toggleFileSelection = (fileId) => {
+    setSelectedFileIds(prev => {
+      if (prev.includes(fileId)) {
+        return prev.filter(id => id !== fileId);
+      } else {
+        return [...prev, fileId];
+      }
+    });
+  };
+
+  const selectAllFiles = () => {
+    const processedFileIds = uploadedFiles
+      .filter(file => file.status === 'processed')
+      .map(file => file.id);
+    setSelectedFileIds(processedFileIds);
+  };
+
+  const clearFileSelection = () => {
+    setSelectedFileIds([]);
+  };
+
+  useEffect(() => {
+    // Remove any selected IDs for files that no longer exist
+    setSelectedFileIds(prev => 
+      prev.filter(id => uploadedFiles.some(file => file.id === id))
     );
-
-  } catch (err) {
-    console.error('File upload error:', err);
-    setError(err.message || 'Failed to upload file');
-    
-    // Update file status to error
-    setUploadedFiles(prev => 
-      prev.map(f => 
-        f.id === tempFileId 
-          ? { ...f, status: 'error', error: err.message } 
-          : f
-      )
-    );
-  } finally {
-    setIsProcessing(false);
-  }
-};
-
+  }, [uploadedFiles]);
+  
 
   const removeFile = async (fileId, removeFromServer = true) => {
     try {
@@ -176,7 +205,11 @@ const uploadFile = async (file) => {
     updateFileStatus,
     hasProcessedFiles,
     processingMethod,
-    setProcessingMethod
+    setProcessingMethod,
+    selectedFileIds,
+    toggleFileSelection,
+    selectAllFiles,
+    clearFileSelection
   };
 
   return (

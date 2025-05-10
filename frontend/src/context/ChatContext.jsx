@@ -14,6 +14,8 @@ export function ChatProvider({ children }) {
   const [selectedDocuments, setSelectedDocuments] = useState([]);
   const { uploadedFiles } = useFileContext();
   const [chatHistory, setChatHistory] = useState([]);
+  const { selectedFileIds } = useFileContext();
+
 
   // When uploaded files change, update the selected documents if needed
   useEffect(() => {
@@ -49,10 +51,7 @@ export function ChatProvider({ children }) {
     setError(null);
     
     try {
-      // Get active file IDs to query against
-      const fileIds = selectedDocuments;
-      
-      if (fileIds.length === 0) {
+      if (selectedFileIds.length === 0) {
         throw new Error('No documents selected. Please upload and select at least one document.');
       }
       
@@ -61,7 +60,7 @@ export function ChatProvider({ children }) {
       setChatHistory(updatedHistory);
       
       // Send request to API
-      const response = await sendMessage(messageText, fileIds);
+      const response = await sendMessage(messageText, selectedFileIds);
       
       // Add AI response to messages
       const aiMessage = {
@@ -110,17 +109,12 @@ export function ChatProvider({ children }) {
     setMessages(prev => [...prev, formattedMessage]);
   };
   
-  /**
-   * Clear all messages from the chat
-   */
   const clearChat = () => {
     setMessages([]);
     setChatHistory([]);
   };
   
-  /**
-   * Toggle selection of a document for querying
-   */
+
   const toggleDocumentSelection = (fileId) => {
     setSelectedDocuments(prev => 
       prev.includes(fileId)

@@ -6,7 +6,7 @@ import './DocumentSidebar.css';
 
 function DocumentSidebar() {
   const fileInputRef = useRef(null);
-  const { uploadedFiles, uploadFile, removeFile, isProcessing, processingMethod } = useFileContext();
+  const { uploadedFiles, uploadFile, removeFile, isProcessing, processingMethod, selectedFileIds, toggleFileSelection, selectAllFiles, clearFileSelection } = useFileContext();
   
   const handleFileChange = async (e) => {
     const files = e.target.files;
@@ -14,6 +14,18 @@ function DocumentSidebar() {
       await processFiles(Array.from(files));
     }
     e.target.value = '';
+  };
+
+  const processedFiles = uploadedFiles.filter(f => f.status === 'processed');
+  const selectedCount = selectedFileIds.length;
+  const totalProcessed = processedFiles.length;
+  
+  const handleToggleAll = () => {
+    if (selectedCount === totalProcessed) {
+      clearFileSelection();
+    } else {
+      selectAllFiles();
+    }
   };
   
   const processFiles = async (files) => {
@@ -70,6 +82,21 @@ function DocumentSidebar() {
           <span>Processing...</span>
         </div>
       )}
+
+      {processedFiles.length > 0 && (
+        <div className="selection-controls">
+          <button
+            className="selection-toggle"
+            onClick={handleToggleAll}
+            title={selectedCount === totalProcessed ? "Deselect all" : "Select all"}
+          >
+            {selectedCount === totalProcessed ? "Deselect All" : "Select All"}
+          </button>
+          <div className="selection-count">
+            {selectedCount} of {totalProcessed} selected
+          </div>
+        </div>
+      )}
       
       <div className="document-list">
         {uploadedFiles.length === 0 ? (
@@ -86,9 +113,31 @@ function DocumentSidebar() {
           uploadedFiles.map((file) => (
             <div 
               key={file.id} 
-              className={`document-item ${file.status === 'uploading' ? 'uploading' : ''}`}
+              className={`document-item ${file.status === 'uploading' ? 'uploading' : ''} ${
+                selectedFileIds.includes(file.id) ? 'selected' : ''
+              }`}
             >
-              <div className="document-icon">
+              {file.status === 'processed' && (
+                <div 
+                  className="document-checkbox"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFileSelection(file.id);
+                  }}
+                >
+                  {selectedFileIds.includes(file.id) ? (
+                    <svg viewBox="0 0 24 24" width="18" height="18">
+                      <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.4-1.4 3.6 3.6 7.6-7.6L19 8l-9 9z"/>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="18" height="18">
+                      <path fill="currentColor" d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
+                    </svg>
+                  )}
+                </div>
+              )}
+
+              <div className="document-icon" onClick={() => file.status === 'processed' && toggleFileSelection(file.id)}>
                 {file.method === 'semantic' ? (
                   <svg viewBox="0 0 24 24" width="24" height="24">
                     <path fill="currentColor" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 12H8v-2h8v2zm0-4H8V8h8v2zm-3-5V3.5L18.5 9H13z" />
@@ -104,7 +153,7 @@ function DocumentSidebar() {
                 )}
               </div>
               
-              <div className="document-info">
+              <div className="document-info" onClick={() => file.status === 'processed' && toggleFileSelection(file.id)}>
                 <div className="document-name-container">
                   <span className="document-name" title={file.name}>
                     {file.name.length > 25 ? file.name.substring(0, 25) + '...' : file.name}
@@ -127,7 +176,10 @@ function DocumentSidebar() {
               
               <button
                 className="remove-document-btn"
-                onClick={() => removeFile(file.id)}
+                onClick={(e) => {
+                  removeFile(file.id);
+                  e.stopPropagation();
+                }}
                 title="Remove document"
               >
                 <svg viewBox="0 0 24 24" width="18" height="18">
@@ -142,6 +194,9 @@ function DocumentSidebar() {
       <div className="sidebar-footer">
         <div className="doc-count">
           {uploadedFiles.filter(f => f.status === 'processed').length} documents available
+        </div>
+        <div className="selected-count">
+          {selectedCount} of {uploadedFiles.filter(f => f.status === 'processed').length} documents selected
         </div>
       </div>
     </div>
