@@ -7,6 +7,22 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+"""
+Now the pdf processor handles chunking, mapping, and processing the pdfs based on the method selected.
+The main functions are:
+1. save_pdf: Save the uploaded PDF file to the server.
+2. extract_text: Extract text from the PDF
+3. chunk_text: Split the text into smaller chunks.
+4. map_chunks_to_pages: Map the chunks to their source pages.
+5. process_pdf: Process the PDF
+
+Now we have 3 extract and process methods for each of the processing methods standard, semantic and layout.
+
+standard: Uses PyPDF to extract text and chunk it.
+semantic: Uses unstructured to extract text and chunk it based on headers.
+layout: Uses pytesseract to extract text and chunk it based on layout.
+"""
+
 class PDFProcessor:
     def __init__(self, pdf_storage_path, chunk_size=1000, chunk_overlap=200):
         self.pdf_storage_path = pdf_storage_path
@@ -50,8 +66,8 @@ class PDFProcessor:
         }
 
     def extract_text(self, file_path):
-        """Standard text extraction using PyPDF"""
         try:
+            # Standard text extraction uses PyPDF
             pdf = PdfReader(file_path)
             text = ""
             page_map = {}
@@ -74,29 +90,8 @@ class PDFProcessor:
             raise
     
     def extract_text_with_structure(self, file_path):
-        """Extract text while preserving document structure using Unstructured"""
         try:
             from unstructured.partition.auto import partition_auto
-            # try:
-            #     import importlib.util
-            #     if importlib.util.find_spec("unstructured") is None:
-            #         logger.warning("Unstructured library not available. Falling back to standard extraction.")
-            #         raise ImportError("Unstructured library not available")
-                
-            #     from unstructured.partition.pdf import partition_pdf
-            # except ImportError:
-            #     logger.warning("Unstructured library not available. Falling back to standard extraction.")
-            #     # Fall back to standard text extraction but return 4 values
-            #     text, page_map, num_pages = self.extract_text(file_path)
-            #     # Return empty headers list to maintain the expected 4 return values
-            #     return text, page_map, num_pages, []
-        
-            # elements = partition_pdf(
-            #     file_path,
-            #     extract_images_in_pdf=False,
-            #     infer_table_structure=True
-            # )
-
             elements_auto = partition_auto(
                 file_path,
                 extract_images_in_pdf=False,
@@ -233,7 +228,6 @@ class PDFProcessor:
             return self.extract_text_with_structure(file_path)
 
     def chunk_text(self, text, method="recursive"):
-        """Chunk text using the specified method"""
         try:
             if method == "recursive":
                 return self.text_splitter.split_text(text)
@@ -272,7 +266,6 @@ class PDFProcessor:
             return self.text_splitter.split_text(text)
     
     def map_chunks_to_pages(self, chunks, text, page_map):
-        """Map chunks to their source pages"""
         chunk_page_map = []
         
         # For each chunk, find which page it comes from
@@ -300,7 +293,6 @@ class PDFProcessor:
         return chunk_page_map
     
     def process_standard(self, file_info):
-        """Standard PDF processing with basic text extraction and chunking"""
         try:
             logger.info(f"🔍 Starting standard processing for '{file_info['name']}'")
             file_path = file_info["path"]
@@ -328,7 +320,6 @@ class PDFProcessor:
             return [], [], file_info
     
     def process_semantic(self, file_info):
-        """Semantic PDF processing using structure-aware extraction"""
         try:
             logger.info(f"📚 Starting semantic processing for '{file_info['name']}'")
             file_path = file_info["path"]
@@ -387,18 +378,11 @@ class PDFProcessor:
             return self.process_standard(file_info)
     
     def process_pdf(self, file_info, method="standard"):
-        """Process a PDF file using the specified method"""
         try:
             # Log the processing request
             logger.info(f"📄 Processing PDF '{file_info['name']}' using method: {method}")
-            
-            # Select processing method based on parameter
-            if method in self.processors:
-                processor = self.processors[method]
-            else:
-                logger.warning(f"⚠️ Unknown processing method: {method}, falling back to standard")
-                processor = self.processors["standard"]
-            
+            processor = self.processors[method]
+
             # Process using selected method and time it
             import time
             start_time = time.time()
@@ -410,5 +394,5 @@ class PDFProcessor:
             
             return result
         except Exception as e:
-            logger.error(f"❌ Error processing PDF with {method} method: {e}")
+            logger.error(f"Error processing PDF with {method} method: {e}")
             raise

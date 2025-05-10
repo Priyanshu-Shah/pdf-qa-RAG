@@ -37,40 +37,9 @@ The flask backend has the following routes:
 4. /api/files/<file_id>: Delete a file from storage and vector database.
 """
 
-# @app.route('/api/upload', methods=['POST'])
-# def upload_pdf():
-#     # We will first save the pdf, update metadata, extarct chunks, and chunk mapping, and add those to the vector store
-#     try:
-#         # Save pdf
-#         pdf_file = request.files['pdf']
-#         file_info = pdf_processor.save_pdf(pdf_file)
-#         # Update metadata with the current date
-#         file_info['dateUploaded'] = datetime.now().isoformat()
-        
-#         # Process the PDF (extract text, chunk, etc.)
-#         chunks, chunk_page_map, updated_file_info = pdf_processor.process_pdf(file_info)
-#         # Add to vector store
-#         if chunks and updated_file_info["status"] == "processed":
-#             vector_store.add_file(updated_file_info, chunks, chunk_page_map)
-        
-#         # Return file info to frontend to show the file size, path and such
-#         return jsonify({
-#             "fileId": updated_file_info["id"],
-#             "filename": updated_file_info["name"],
-#             "size": updated_file_info["size"],
-#             "data": {
-#                 "pages": updated_file_info.get("pages", 0),
-#                 "processed": updated_file_info["status"] == "processed",
-#                 "error": updated_file_info.get("error", None)
-#             }
-#         })
-    
-#     except Exception as e:
-#         logger.error(f"Error uploading file: {e}")
-#         return jsonify({"error": str(e)}), 500
-
 @app.route('/api/upload', methods=['POST'])
 def upload_pdf():
+    # We will first save the pdf, update metadata, extarct chunks, and chunk mapping, and add those to the vector store
     try:
         # Check if file was provided
         if 'pdf' not in request.files:

@@ -216,12 +216,9 @@ class VectorStoreService:
             return []
 
     def add_file(self, file_info, chunks, chunk_page_map):
-        """Add file chunks to vector store"""
         try:
             logger.info(f"Adding file {file_info['id']} to vector store with {len(chunks)} chunks")
-            
             documents = []
-            
             for i, chunk in enumerate(chunks):
                 try:
                     # Explicitly ensure chunk is a string
@@ -248,10 +245,7 @@ class VectorStoreService:
                     if chunk_page_map and i in chunk_page_map:
                         page_num = chunk_page_map[i]
                         metadata["page"] = page_num
-                    
-                    # Skip the filter_complex_metadata function entirely
-                    # We'll manually filter metadata instead
-                    
+
                     # Manually filter complex types
                     clean_metadata = {}
                     for key, value in metadata.items():
